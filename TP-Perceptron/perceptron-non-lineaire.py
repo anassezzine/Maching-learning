@@ -30,9 +30,6 @@ plt.title("Données non linéairement séparables")
 plt.show()
 
 def polynomial_feature_mapping(X):
-    """
-    Effectue un plongement φ(x, y) = (1, x, y, x², xy, y²).
-    """
     X_poly = np.c_[np.ones(X.shape[0]), X[:, 0], X[:, 1], X[:, 0]**2, X[:, 0] * X[:, 1], X[:, 1]**2]
     return X_poly
 
@@ -41,19 +38,6 @@ X3_poly = polynomial_feature_mapping(X3)
 
 
 def perceptron_kernel(X, Y, kernel, max_iter=1000):
-    """
-    Implémente le Perceptron à noyau.
-    
-    Paramètres :
-    - X : Données d'apprentissage.
-    - Y : Labels (-1 ou 1).
-    - kernel : Fonction noyau k(x, y).
-    - max_iter : Nombre maximal d'itérations.
-    
-    Retourne :
-    - coefficients : Liste des coefficients alpha.
-    - support_vectors : Liste des vecteurs supports.
-    """
     n_samples = len(Y)
     coefficients = np.zeros(n_samples)  # Coefficients alpha
     support_vectors = X.copy()
@@ -78,9 +62,6 @@ def kernel_poly(x, y):
 alphas, support_vectors = perceptron_kernel(X3_poly, Y3, kernel_poly)
 
 def f_from_kernel(coeffs, support_set, kernel, x):
-    """
-    Fonction de décision f(x) = somme(alpha_i * y_i * k(x_i, x))
-    """
     return sum(coeffs[i] * Y3[i] * kernel(support_set[i], x) for i in range(len(coeffs)))
 
 # Tracé de la frontière de séparation
@@ -109,10 +90,6 @@ def kernel_gaussian(x, y, sigma=1):
 
 # Entraînement du perceptron avec noyau Gaussien
 alphas_gauss, support_vectors_gauss = perceptron_kernel(X3, Y3, kernel_gaussian)
-
-
-def kernel_gaussian(x, y, sigma=1):
-    return np.exp(-np.linalg.norm(np.array(x) - np.array(y))**2 / (2 * sigma**2))
 
 # Expérimentation avec différents sigma
 for sigma in [0.2, 0.5, 1, 2, 5]:

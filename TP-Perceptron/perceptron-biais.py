@@ -40,9 +40,6 @@ X2_biased = add_bias(X2)
 
 
 def perceptron_biased(X, Y, max_iter=1000):
-    """
-    Implémente le perceptron avec biais.
-    """
     n_samples, n_features = X.shape
     w = np.zeros(n_features)  # Initialisation des poids (y compris le biais)
 
