@@ -1,83 +1,87 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Chargement des données d'entraînement
 with open("./TP3_data/learn.data", "r") as f:
     training_set = [eval(line) for line in f]
 
-
-# Supposons que chaque entrée de training_set soit de la forme ([x1, x2, ...], label)
 X = np.array([data[0] for data in training_set])
-y = np.array([data[1] for data in training_set])
-
-# Pour une visualisation en 2D, nous supposons que les données ont deux caractéristiques
-plt.scatter(X[:, 0], X[:, 1], c=y, cmap='bwr', alpha=0.7)
-plt.xlabel('Feature 1')
-plt.ylabel('Feature 2')
-plt.title('Visualisation des données d\'entraînement')
-plt.show()
-
-
-class Perceptron:
-    def __init__(self, learning_rate=0.01, n_iters=1000):
-        self.lr = learning_rate
-        self.n_iters = n_iters
-        self.activation_func = self._unit_step_function
-        self.weights = None
-        self.bias = None
-
-    def fit(self, X, y):
-        n_samples, n_features = X.shape
-        self.weights = np.zeros(n_features)
-        self.bias = 0
-
-        y_ = np.where(y <= 0, -1, 1)
-
-        for _ in range(self.n_iters):
-            for idx, x_i in enumerate(X):
-                linear_output = np.dot(x_i, self.weights) + self.bias
-                y_predicted = self.activation_func(linear_output)
-
-                update = self.lr * (y_[idx] - y_predicted)
-                self.weights += update * x_i
-                self.bias += update
-
-    def predict(self, X):
-        linear_output = np.dot(X, self.weights) + self.bias
-        return self.activation_func(linear_output)
-
-    def _unit_step_function(self, x):
-        return np.where(x >= 0, 1, -1)
-
-
-perceptron = Perceptron(learning_rate=0.01, n_iters=1000)
-perceptron.fit(X, y)
-
+Y = np.array([data[1] for data in training_set])
 
 # Chargement des données de test
 with open("./TP3_data/test.data", "r") as f:
     test_set = [eval(line) for line in f]
 
 X_test = np.array([data[0] for data in test_set])
-y_test = np.array([data[1] for data in test_set])
-
-# Prédictions
-predictions = perceptron.predict(X_test)
-
-# Calcul du score
-accuracy = np.mean(predictions == y_test)
-print(f"Accuracy: {accuracy * 100:.2f}%")
+Y_test = np.array([data[1] for data in test_set])
 
 
-def score(S, coeffs, support_set, k):
+### 🌟 Définition du noyau gaussien
+def kernel_gaussian(x, y, sigma=1):
+    return np.exp(-np.linalg.norm(np.array(x) - np.array(y))**2 / (2 * sigma**2))
+
+
+### 🌟 Implémentation du perceptron à noyau
+def perceptron_kernel(X, Y, kernel, max_iter=1000):
+    n_samples = len(Y)
+    coefficients = np.zeros(n_samples)  # Coefficients alpha
+    support_vectors = X.copy()
+
+    for _ in range(max_iter):
+        error = False
+        for i in range(n_samples):
+            sum_kernel = sum(coefficients[j] * Y[j] * kernel(X[j], X[i]) for j in range(n_samples))
+            if Y[i] * sum_kernel <= 0:  # Mauvaise classification
+                coefficients[i] += 1  # Mise à jour de alpha
+                error = True
+        if not error:
+            break
+
+    return coefficients, support_vectors
+
+
+### 🌟 Fonction pour calculer la séparation des classes
+def f_from_kernel(coeffs, support_set, kernel, x):
+    return sum(coeffs[i] * Y[i] * kernel(support_set[i], x) for i in range(len(coeffs)))
+
+
+### 🌟 Fonction pour calculer le score (accuracy)
+def score(S, coeffs, support_set, kernel):
     correct_predictions = 0
     total_samples = len(S)
 
     for x, label in S:
-        prediction = np.sign(sum(coeff * k(support, x) for coeff, support in zip(coeffs, support_set)))
+        prediction = np.sign(sum(coeffs[i] * Y[i] * kernel(support_set[i], x) for i in range(len(coeffs))))
         if prediction == label:
             correct_predictions += 1
 
     return correct_predictions / total_samples
 
 
+### 🚀 Expérimentation avec différentes valeurs de sigma
+for sigma in [1, 2, 3, 5]:
+    alphas_gauss, support_vectors_gauss = perceptron_kernel(X, Y, lambda x, y: kernel_gaussian(x, y, sigma))
 
+    # Calcul du score (accuracy)
+    accuracy = score(list(zip(X_test, Y_test)), alphas_gauss, support_vectors_gauss, lambda x, y: kernel_gaussian(x, y, sigma))
+    
+    # Affichage du score
+    print(f"Sigma = {sigma}, Accuracy = {accuracy * 100:.2f}%")
+
+    plt.figure(figsize=(8, 6))
+    plt.scatter(X[Y == -1, 0], X[Y == -1, 1], color='blue', marker='o', label='Classe -1')
+    plt.scatter(X[Y == 1, 0], X[Y == 1, 1], color='red', marker='x', label='Classe 1')
+
+    # Tracé de la frontière de séparation
+    res = 100
+    x_vals = np.linspace(min(X[:, 0]), max(X[:, 0]), res)
+    y_vals = np.linspace(min(X[:, 1]), max(X[:, 1]), res)
+
+    for x in range(res):
+        for y in range(res):
+            if abs(f_from_kernel(alphas_gauss, support_vectors_gauss, lambda x, y: kernel_gaussian(x, y, sigma), [x_vals[x], y_vals[y]])) < 0.01:
+                plt.plot(x_vals[x], y_vals[y], 'kx', markersize=2)  # Points proches de la frontière
+
+    plt.legend()
+    plt.title(f"Perceptron à Noyau Gaussien (σ={sigma})\nAccuracy: {accuracy * 100:.2f}%")
+    plt.show()
