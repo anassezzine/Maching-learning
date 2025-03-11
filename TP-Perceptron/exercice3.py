@@ -59,7 +59,7 @@ def score(S, coeffs, support_set, kernel):
 
 
 ### 🚀 Expérimentation avec différentes valeurs de sigma
-for sigma in [1, 2, 3, 5]:
+for sigma in [0.5, 1, 2, 3, 5]:
     alphas_gauss, support_vectors_gauss = perceptron_kernel(X, Y, lambda x, y: kernel_gaussian(x, y, sigma))
 
     # Calcul du score (accuracy)
