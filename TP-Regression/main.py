@@ -31,19 +31,19 @@ lin_reg.fit(X, y)
 y_pred_sklearn = lin_reg.predict(X)
 
 # Appliquer la régression Ridge et Lasso
-ridge = Ridge(alpha=1.0)
+ridge = Ridge(alpha=0.001)
 ridge.fit(X, y)
 y_pred_ridge = ridge.predict(X)
 
-lasso = Lasso(alpha=1.0)
+lasso = Lasso(alpha=0.00207)
 lasso.fit(X, y)
 y_pred_lasso = lasso.predict(X)
 
-# Recherche du meilleur alpha
-alphas = np.logspace(-3, -1, 20)
-for Model in [Ridge, Lasso]:
-    gscv = GridSearchCV(Model(), dict(alpha=alphas), cv=5).fit(X, y)
-    print(f"Meilleur alpha pour {Model.__name__}: {gscv.best_params_}")
+# Visualisation des coefficients
+print("Coefficients Moindres Carrés:", w)
+print("Coefficients Scikit-learn:", lin_reg.coef_)
+print("Coefficients Ridge:", ridge.coef_)
+print("Coefficients Lasso:", lasso.coef_)
 
 # Visualisation en 3D
 def plot_data_3D(X, y, y_pred, title="Régression linéaire"):
@@ -74,3 +74,53 @@ print(f"Erreur quadratique moyenne (moindres carrés) : {erreur_moindres_carres}
 print(f"Erreur quadratique moyenne (Scikit-learn) : {erreur_sklearn}")
 print(f"Erreur quadratique moyenne (Ridge) : {erreur_ridge}")
 print(f"Erreur quadratique moyenne (Lasso) : {erreur_lasso}")
+
+# Visualisation de l'erreur en fonction d'alpha
+alphas = np.logspace(-3, -1, 20)
+ridge_errors = []
+lasso_errors = []
+ridge_coefs = []
+lasso_coefs = []
+for alpha in alphas:
+    ridge = Ridge(alpha=alpha)
+    ridge.fit(X, y)
+    ridge_errors.append(mean_squared_error(y, ridge.predict(X)))
+    ridge_coefs.append(ridge.coef_)
+    
+    lasso = Lasso(alpha=alpha)
+    lasso.fit(X, y)
+    lasso_errors.append(mean_squared_error(y, lasso.predict(X)))
+    lasso_coefs.append(lasso.coef_)
+
+plt.figure()
+plt.plot(alphas, ridge_errors, label="Ridge")
+plt.plot(alphas, lasso_errors, label="Lasso")
+plt.xscale("log")
+plt.xlabel("Alpha")
+plt.ylabel("Erreur quadratique moyenne")
+plt.legend()
+plt.title("Impact de la régularisation sur l'erreur")
+plt.show()
+
+# Visualisation de l'évolution des coefficients
+ridge_coefs = np.array(ridge_coefs)
+lasso_coefs = np.array(lasso_coefs)
+plt.figure()
+for i in range(ridge_coefs.shape[1]):
+    plt.plot(alphas, ridge_coefs[:, i], label=f"Ridge coef {i}")
+plt.xscale("log")
+plt.xlabel("Alpha")
+plt.ylabel("Valeur des coefficients")
+plt.title("Évolution des coefficients Ridge")
+plt.legend()
+plt.show()
+
+plt.figure()
+for i in range(lasso_coefs.shape[1]):
+    plt.plot(alphas, lasso_coefs[:, i], label=f"Lasso coef {i}")
+plt.xscale("log")
+plt.xlabel("Alpha")
+plt.ylabel("Valeur des coefficients")
+plt.title("Évolution des coefficients Lasso")
+plt.legend()
+plt.show()
